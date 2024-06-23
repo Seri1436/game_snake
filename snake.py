@@ -35,6 +35,7 @@ class Snake:
     def __init__(self):
         self.body = [Vector2(6, 9), Vector2(5, 9), Vector2(4, 9)]
         self.direction = Vector2(1, 0)
+        self.add_segment = False
 
     def draw(self):
         for segment in self.body:
@@ -42,26 +43,49 @@ class Snake:
             pygame.draw.rect(screen, DARK_GREEN, segment_rect, 0, 7)
 
     def update(self):
-        self.body = self.body[:-1]
         self.body.insert(0, self.body[0] + self.direction)
+        if self.add_segment == True:
+            self.add_segment = False
+        else:
+            self.body = self.body[:-1]
+
+    def reset(self):
+        self.body = [Vector2(6, 9), Vector2(5, 9), Vector2(4, 9)]
+        self.direction = Vector2(1, 0)
 
 class Game:
     def __init__(self):
         self.snake = Snake()
         self.food = Food(self.snake.body)
+        self.state = "RUNNING"
     
     def draw(self):
         self.food.draw()
         self.snake.draw()
 
     def update(self):
-        self.snake.update()
-        self.check_collision_with_food()
+        if self.state == "RUNNING":
+            self.snake.update()
+            self.check_collision_with_food()
+            self.check_collision_with_edges()
 
     def check_collision_with_food(self):
         if self.snake.body[0] == self.food.position:
             self.food.position = self.food.generate_random_pos(self.snake.body)
+            self.snake.add_segment = True
             # print("Eating Food")
+
+    def check_collision_with_edges(self):
+        if self.snake.body[0].x == number_of_cells or self.snake.body[0].x == -1:
+            self.game_over()
+        if self.snake.body[0].y == number_of_cells or self.snake.body[0].y == -1:
+            self.game_over()
+
+    def game_over(self):
+        self.snake.reset()
+        self.food.position = self.food.generate_random_pos(self.snake.body)
+        self.state = "STOPPED"
+        # print("Game Over")
 
 screen = pygame.display.set_mode((cell_size * number_of_cells, cell_size * number_of_cells))
 
@@ -86,6 +110,8 @@ while True:
             sys.exit()
 
         if event.type == pygame.KEYDOWN:
+            if game.state == "STOPPED":
+                game.state = "RUNNING"
             if event.key == pygame.K_UP and game.snake.direction != Vector2(0, 1):
                 game.snake.direction = Vector2(0, -1)
             if event.key == pygame.K_DOWN and game.snake.direction != Vector2(0, -1):
